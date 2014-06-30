@@ -10,6 +10,7 @@ var db = Bookshelf.initialize({
     database: 'shortlydb',
     charset: 'utf8',
     filename: path.join(__dirname, '../db/shortly.sqlite')
+    // filename: path.join(__dirname, '../db/test.sqlite')
   }
 });
 
@@ -26,6 +27,8 @@ db.knex.schema.hasTable('urls').then(function(exists) {
     }).then(function (table) {
       console.log('Created Table', table);
     });
+  }else{
+    console.log('Table urls already exists.');
   }
 });
 
@@ -45,5 +48,29 @@ db.knex.schema.hasTable('clicks').then(function(exists) {
 // Add additional schema definitions below
 /************************************************************/
 
+//check if table 'users' exists
+db.knex.schema.hasTable('users').then(function(exists) {
+  //if not, create it
+  if (!exists){
+    //set the schema for it (fields and data types)
+    db.knex.schema.createTable('users', function(user){
+      user.increments('id').primary();
+      //username: string, min-length 4, not null
+      user.string('username', 255).notNullable();
+      //password string, min-length 8, not null
+      user.string('password', 255).notNullable();
+      //session token (string), default to null
+      user.string('sessionToken', 255);
+    }).then(function (table){
+      //if created, log success
+      console.log('Created Table', table);
+    }).catch(function(error){
+      //else log failure
+      console.log('Failed to create Table', error);
+    });
+  }else{
+    console.log('Table Users already exists');
+  } //else nothing
+});
 
 module.exports = db;

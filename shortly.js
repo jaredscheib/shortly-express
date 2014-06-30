@@ -2,6 +2,7 @@
 var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
+var auth = require('./lib/auth');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -31,7 +32,7 @@ app.get('/create', function(req, res) {
 app.get('/links', function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
-  })
+  });
 });
 
 app.post('/links', function(req, res) {
@@ -71,6 +72,32 @@ app.post('/links', function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+// route for /signup
+app.get( '/signup', function( req, res ) {
+//   if logged in
+  if ( auth.userLoggedIn() ) {
+//     route to /links
+    res.redirect( '/links' );
+//   else
+  } else {
+//     render & serve compiled signup page
+    res.render( 'signup' );
+  }
+});
+
+
+// route for /login
+app.get( '/login', function( req, res ) {
+//   if logged in
+  if ( auth.userLoggedIn() ) {
+//     route to /links
+    res.redirect( '/links' );
+//   else
+  } else {
+//    render & serve compiled login page
+    res.render( 'login' );
+  }
+});
 
 
 /************************************************************/
