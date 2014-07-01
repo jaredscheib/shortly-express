@@ -18,11 +18,14 @@ app.configure(function() {
   app.set('views', __dirname + '/views');
   app.set('view engine', 'ejs');
   app.use(partials());
-  app.use(express.bodyParser())
+  app.use(express.bodyParser());
+  app.use(express.cookieParser());
+  app.use(express.session({ secret: 'abcdefghijklmnopqrstuvwxyz' }));
   app.use(express.static(__dirname + '/public'));
 });
 
 app.get('/', function(req, res) {
+  console.log( req.session );
   res.render('index');
 });
 
@@ -31,9 +34,15 @@ app.get('/create', function(req, res) {
 });
 
 app.get('/links', function(req, res) {
-  Links.reset().fetch().then(function(links) {
+  //use user's id to fetch links from the database
+  var id = req.session.id;
+  Links.query().where({user_id: id}).select().then( function(links) {
     res.send(200, links.models);
   });
+
+  // Links.reset().fetch().then(function(links) {
+  //   res.send(200, links.models);
+  // });
 });
 
 app.post('/links', function(req, res) {
@@ -57,7 +66,8 @@ app.post('/links', function(req, res) {
         var link = new Link({
           url: uri,
           title: title,
-          base_url: req.headers.origin
+          base_url: req.headers.origin,
+          user_id: req.session.id
         });
 
         link.save().then(function(newLink) {
@@ -116,6 +126,7 @@ app.post('/login', function(req, res){
       // TO DO: cookie baking time - send token
       // redirect to links
       if ( hash === user.get('password') ) {
+        req.session.id = user.get('id');
         res.redirect('/links');
       }else{
         res.redirect('/login'); //password incorrect
@@ -143,6 +154,7 @@ app.post('/signup', function(req, res){
       tempObj.originalPassword = req.body.password;
       new User(req.body).save()
       .then(function(user){
+        req.session.id = user.get('id');
         res.redirect('/links');
         tempObj.password = user.get('password');
         console.log('Successfully signed up ', user, 'original password', tempObj.originalPassword, 'hashed password', tempObj.password);
