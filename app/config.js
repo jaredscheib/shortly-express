@@ -61,6 +61,9 @@ db.knex.schema.hasTable('users').then(function(exists) {
       user.string('password', 255).notNullable();
       //session token (string), default to null
       user.string('sessionToken', 255);
+      //salt
+      user.string('salt', 255);
+      user.timestamps();
     }).then(function (table){
       //if created, log success
       console.log('Created Table', table);
@@ -69,7 +72,7 @@ db.knex.schema.hasTable('users').then(function(exists) {
       console.log('Failed to create Table', error);
     });
   }else{
-    console.log('Table Users already exists');
+    console.log('Table users already exists');
   } //else nothing
 });
 

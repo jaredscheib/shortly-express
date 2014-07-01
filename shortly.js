@@ -3,7 +3,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var auth = require('./lib/auth');
-var crypto = require('crypto');
+var bcrypt = require('bcrypt-nodejs');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -107,17 +107,19 @@ app.post('/login', function(req, res){
   //if user exists
   .then(function(user){
     console.log('login user', user);
-    var shasum = crypto.createHash('sha1');
-    shasum.update(req.body.password);
-    var hashedPass = shasum.digest('hex');
     // if passwords match (sychronous)
-    if( user && (hashedPass === user.get('password') )){
-      // TO DO: cookie baking time - send token
-      // redirect to links
-      res.redirect('/links');
-    }else{
+    if( user == null ){
       // redirect to login with error
       res.redirect('/login'); // TO DO: send back index with "error" banner displayed
+    }else{
+      var hash = bcrypt.hashSync(req.body.password, user.get('salt'));
+      // TO DO: cookie baking time - send token
+      // redirect to links
+      if ( hash === user.get('password') ) {
+        res.redirect('/links');
+      }else{
+        res.redirect('/login'); //password incorrect
+      }
     }
   });
 });
@@ -131,6 +133,7 @@ app.post('/signup', function(req, res){
     console.log('signup user', user);
     //if fail (user exists)
     if( user ){
+      console.log('user exists, redirecting to signup');
       //redirect to signup
       res.redirect('/signup'); // TO DO: add 'user already exists banner'
     }else{
