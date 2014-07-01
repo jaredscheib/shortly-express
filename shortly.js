@@ -3,6 +3,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var auth = require('./lib/auth');
+var crypto = require('crypto');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -99,6 +100,53 @@ app.get( '/login', function( req, res ) {
   }
 });
 
+// route for post request sent to /login
+app.post('/login', function(req, res){
+  // getUserIfExists - returns promise
+  new User({username: req.body.username}).fetch()
+  //if user exists
+  .then(function(user){
+    console.log('login user', user);
+    var shasum = crypto.createHash('sha1');
+    shasum.update(req.body.password);
+    var hashedPass = shasum.digest('hex');
+    // if passwords match (sychronous)
+    if( user && (hashedPass === user.get('password') )){
+      // TO DO: cookie baking time - send token
+      // redirect to links
+      res.redirect('/links');
+    }else{
+      // redirect to login with error
+      res.redirect('/login'); // TO DO: send back index with "error" banner displayed
+    }
+  });
+});
+
+//route for post request sent to /signup
+app.post('/signup', function(req, res){
+  //create new user instance
+  new User({username: req.body.username}).fetch()
+  //fetch user from database
+  .then(function(user){
+    console.log('signup user', user);
+    //if fail (user exists)
+    if( user ){
+      //redirect to signup
+      res.redirect('/signup'); // TO DO: add 'user already exists banner'
+    }else{
+      //create new user (as user instance and then in database)
+      //redirect to links with success banner
+      var tempObj = {};
+      tempObj.originalPassword = req.body.password;
+      new User(req.body).save()
+      .then(function(user){
+        res.redirect('/links');
+        tempObj.password = user.get('password');
+        console.log('Successfully signed up ', user, 'original password', tempObj.originalPassword, 'hashed password', tempObj.password);
+      }); //TO DO: send session token to client (cookie-baking magic)
+    }
+  });
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
